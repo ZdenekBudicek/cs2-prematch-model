@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS2 Expert Dashboard</title>
+<link rel="icon" href="data:,">
+<meta name="description" content="Team trends, player ratings, roster changes and map pool shifts in professional Counter-Strike 2, built from public results.">
+<style>
+:root{color-scheme:dark;--bg:#0c0e12;--surface:#161a21;--surface-2:#1c212a;--line:#262c37;--line-2:#323a48;--text:#e8ebf0;--text-2:#a9b1be;--text-3:#7a8494;--accent:#ffb020;--s1:#3987e5;--s2:#d95926;--mid:#7a8494;--font:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:"JetBrains Mono",ui-monospace,"Cascadia Code",Consolas,monospace}
+@media (prefers-color-scheme:light){:root{color-scheme:light;--bg:#f6f5f1;--surface:#fff;--surface-2:#f7f6f2;--line:#e2dfd6;--line-2:#d3cfc3;--text:#15171b;--text-2:#4a505b;--text-3:#6f7581;--accent:#a56200;--s1:#2a78d6;--s2:#eb6834;--mid:#8d8a80}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:64px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--font);-webkit-font-smoothing:antialiased}
+.en,.cs{display:inline}html.is-cs .en,html:not(.is-cs) .cs{display:none}
+p.en,p.cs,div.en,div.cs{display:block}html.is-cs p.en,html.is-cs div.en,html:not(.is-cs) p.cs,html:not(.is-cs) div.cs{display:none}
+a{color:var(--accent)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+header.bar{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;gap:18px;height:52px}
+.bar a.back{color:var(--text-2);text-decoration:none;font-size:13px;white-space:nowrap}
+.bar nav{display:flex;gap:16px;margin-left:auto;font-size:13px}.bar nav a{color:var(--text-2);text-decoration:none}.bar nav a:hover,.bar a.back:hover{color:var(--text)}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:8px;overflow:hidden}
+.seg button{all:unset;cursor:pointer;padding:5px 11px;font-size:13px;color:var(--text-2)}
+.seg button[aria-pressed=true]{background:var(--surface-2);color:var(--text);font-weight:600}
+.seg button:focus-visible,button.link:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.hero{padding:44px 0 12px}
+h1{font-size:clamp(28px,4.6vw,42px);line-height:1.1;margin:0 0 12px;letter-spacing:-.02em}
+.hero p{max-width:70ch;color:var(--text-2);margin:0 0 8px}
+.asof{font:12px var(--mono);color:var(--text-3)}
+section{padding:34px 0 8px}
+h2{font-size:22px;margin:0 0 4px;letter-spacing:-.01em}
+.finding{color:var(--text-2);margin:0 0 16px;max-width:76ch}
+h3{font-size:15px;margin:0 0 3px}
+.sub{color:var(--text-3);font-size:13px;margin:0 0 12px;max-width:74ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}.two>.card{margin-bottom:0}.two{margin-bottom:16px}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+label.f{display:inline-flex;gap:7px;align-items:center;font-size:13px;color:var(--text-2)}
+select,input[type=search]{background:var(--surface-2);color:var(--text);border:1px solid var(--line-2);border-radius:8px;padding:6px 9px;font:inherit;font-size:14px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th{font-size:12px;font-weight:500;color:var(--text-3);text-align:right;padding:6px 8px;border-bottom:1px solid var(--line-2);white-space:nowrap}
+td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th.l,td.l{text-align:left}tr:last-child td{border-bottom:0}
+tr.sel td{background:var(--surface-2)}
+tr.total td{font-weight:600;border-top:1px solid var(--line-2)}
+td.mut,.mut{color:var(--text-3)}td.wrapc{white-space:normal;min-width:130px}
+button.link{all:unset;cursor:pointer;color:var(--text);border-bottom:1px solid var(--line-2)}button.link:hover{border-color:var(--accent)}
+.heat th,.heat td{padding:0;border:0;text-align:center}
+.heat{border-collapse:separate;border-spacing:2px;font-size:12px}
+.heat th{padding:3px 2px;font-size:11px}.heat th.l{text-align:left;padding-right:10px;font-size:13px;color:var(--text);font-weight:500}
+.heat td{height:30px;min-width:36px;border-radius:4px;color:var(--text);cursor:default}
+.heat td.low{color:var(--text-3)}.heat tfoot th{color:var(--text-3)}.heat tfoot th.l{color:var(--text-3);font-size:12px}
+.scale{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3);margin-top:10px}.scale i{display:block;width:120px;height:9px;border-radius:3px;background:linear-gradient(90deg,var(--surface-2),color-mix(in oklab,var(--s1) 72%,var(--surface)))}
+.shift{display:grid;grid-template-columns:76px 1fr 70px;gap:6px 10px;align-items:center;font-size:14px}
+.shift .track{position:relative;height:16px;cursor:default}.shift .track::before{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line-2)}
+.shift .b{position:absolute;top:3px;height:10px}.shift .up{left:calc(50% + 1px);background:var(--s1);border-radius:0 4px 4px 0}.shift .down{right:calc(50% + 1px);background:var(--s2);border-radius:4px 0 0 4px}
+.shift .v{text-align:right;font-variant-numeric:tabular-nums}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.tile{background:var(--surface-2);border-radius:8px;padding:10px 12px}.tile b{display:block;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.25}.tile span{font-size:12px;color:var(--text-3)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-2);margin-bottom:6px}.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}.legend svg{vertical-align:-1px;margin-right:6px}
+.chart{position:relative;width:100%}.chart svg{display:block;width:100%;touch-action:pan-y}
+.winbar{display:inline-block;width:90px;height:8px;background:var(--surface-2);border-radius:4px;vertical-align:middle;margin-right:8px;position:relative;overflow:hidden}.winbar i{position:absolute;left:0;top:0;bottom:0;background:var(--s1);border-radius:0 4px 4px 0}
+.tag{font-size:11px;border:1px solid var(--line-2);border-radius:5px;padding:0 5px;color:var(--text-3);margin-left:6px}
+details{margin-top:12px;font-size:14px;color:var(--text-2)}summary{cursor:pointer;color:var(--text-2)}
+details.method{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 18px}details.method p{margin:10px 0;max-width:80ch}
+button.more{all:unset;cursor:pointer;color:var(--accent);font-size:14px;margin-top:10px;display:inline-block}
+#tip{position:fixed;z-index:20;pointer-events:none;background:var(--surface-2);border:1px solid var(--line-2);border-radius:8px;padding:7px 10px;font-size:13px;line-height:1.4;max-width:260px;display:none;box-shadow:0 8px 24px rgba(0,0,0,.3)}#tip b{font-weight:600}
+.odd{background:var(--surface-2);border-radius:8px;padding:12px 14px}.odd h3{margin:0}.odd b{display:block;font-size:30px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.25}.odd span.p{color:var(--text-2);font-variant-numeric:tabular-nums}.odd small{display:block;color:var(--text-3);font-size:12px;margin-top:4px;white-space:normal}
+.split{display:flex;gap:2px;height:10px}.split i{display:block;height:100%}.split i:first-child{background:var(--s1);border-radius:4px 0 0 4px}.split i:last-child{background:var(--s2);border-radius:0 4px 4px 0}
+[hidden]{display:none!important}
+footer{padding:26px 0 44px;color:var(--text-3);font-size:13px}footer p{margin:0 0 6px;max-width:82ch}
+@media (max-width:760px){.two{grid-template-columns:minmax(0,1fr)}.bar nav{display:none}.bar .seg{margin-left:auto}.card{padding:14px}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header class="bar"><div class="wrap">
+  <a class="back" href="../"><span class="en">← Portfolio</span><span class="cs">← Portfolio</span></a>
+  <nav><a href="#price" id="priceNav"><span class="en">Pricing</span><span class="cs">Ceny</span></a><a href="#pool"><span class="en">Map pool</span><span class="cs">Map pool</span></a><a href="#teams"><span class="en">Teams</span><span class="cs">Týmy</span></a><a href="#players"><span class="en">Players</span><span class="cs">Hráči</span></a><a href="#moves"><span class="en">Roster changes</span><span class="cs">Změny soupisek</span></a><a href="#method"><span class="en">Method</span><span class="cs">Metoda</span></a></nav>
+  <div class="seg" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="cs">CZ</button></div>
+</div></header>
+<main class="wrap">
+  <div class="hero">
+    <h1><span class="en">CS2 expert dashboard</span><span class="cs">CS2 dashboard pro experty</span></h1>
+    <p class="en">A working view of professional Counter-Strike 2 for people who price matches: where each team's rating is heading, which maps are entering or leaving the pool, and what happened after roster changes.</p>
+    <p class="cs">Pracovní přehled profesionálního Counter-Strike 2 pro lidi, kteří oceňují zápasy: kam se vyvíjí rating týmů, které mapy přicházejí a odcházejí z map poolu a co následovalo po změnách soupisek.</p>
+    <p class="asof" id="asof"></p>
+  </div>
+
+  <section id="price" hidden>
+    <h2><span class="en">Price a match</span><span class="cs">Ocenit zápas</span></h2>
+    <p class="finding" id="priceFinding"></p>
+    <div class="card">
+      <div class="controls">
+        <label class="f"><span class="en">Team A</span><span class="cs">Tým A</span> <select id="pa"></select></label>
+        <button class="more" id="swap" style="margin:0"><span class="en">Swap</span><span class="cs">Prohodit</span></button>
+        <label class="f"><span class="en">Team B</span><span class="cs">Tým B</span> <select id="pb"></select></label>
+        <div class="seg" role="group" aria-label="Format" id="boSeg"><button data-bo="1">BO1</button><button data-bo="3">BO3</button></div>
+        <label class="f"><span class="en">Margin</span><span class="cs">Marže</span> <select id="pm"><option value="0">0 %</option><option value="0.03">3 %</option><option value="0.05">5 %</option><option value="0.08">8 %</option></select></label>
+      </div>
+      <div class="two" style="margin-bottom:10px" id="odds"></div>
+      <div class="split" id="split" aria-hidden="true"></div>
+      <div class="two" style="margin:18px 0 0">
+        <div style="grid-column:1/-1"><h3><span class="en">What moves the price</span><span class="cs">Co hýbe cenou</span></h3><p class="sub"><span class="en">Each input's contribution in log-odds. Blue pushes towards team A, orange towards team B. The inputs overlap and offset each other: form can push against a team on a winning run because the ratings have already counted those wins. Read the total, not one bar.</span><span class="cs">Příspěvek každého vstupu v log-odds. Modrá tlačí k týmu A, oranžová k týmu B. Vstupy se překrývají a vzájemně vyvažují: forma může tlačit proti týmu v sérii výher, protože ratingy už ty výhry započítaly. Čti celek, ne jeden sloupec.</span></p><div class="shift" id="drivers"></div></div>
+      </div>
+      <p class="sub" style="margin:16px 0 0"><span class="en">Series winner only. Research estimate, before the veto, with the last known rosters and data to the date above. It does not see stand-ins or map bans. Built from Liquipedia results only, where about 8% of series have the wrong format because maps are missing, so total maps and handicap are not priced. In testing this model was less accurate than Pinnacle (log loss 0.607 against 0.576 on 676 series). Not betting advice.</span><span class="cs">Jen vítěz série. Výzkumný odhad před vetem, s posledními známými soupiskami a daty k výše uvedenému dni. Nevidí záskoky ani zákazy map. Vychází jen z výsledků na Liquipedii, kde má asi 8 % sérií kvůli chybějícím mapám špatný formát, proto se neoceňuje počet map ani handicap. V testu byl tento model méně přesný než Pinnacle (log loss 0,607 proti 0,576 na 676 sériích). Nejde o sázkové doporučení.</span></p>
+    </div>
+  </section>
+
+  <section id="pool">
+    <h2><span class="en">Map pool and meta shifts</span><span class="cs">Map pool a posuny v metě</span></h2>
+    <p class="finding" id="poolFinding"></p>
+    <div class="controls"><div class="seg" role="group" aria-label="Events" id="tierSeg"><button data-tier="all"><span class="en">All events</span><span class="cs">Všechny turnaje</span></button><button data-tier="s"><span class="en">S-tier only</span><span class="cs">Jen S-tier</span></button></div></div>
+    <div class="card">
+      <h3><span class="en">Share of maps played each month</span><span class="cs">Podíl odehraných map po měsících</span></h3>
+      <p class="sub"><span class="en">Percent of all maps that month. Months with fewer than 30 maps are greyed out. * marks a month still in progress.</span><span class="cs">Procento všech map v daném měsíci. Měsíce s méně než 30 mapami jsou šedé. * značí měsíc, který ještě běží.</span></p>
+      <div class="scroll"><table class="heat" id="heat"></table></div>
+      <div class="scale"><span>0 %</span><i></i><span id="heatMax"></span></div>
+    </div>
+    <div class="two">
+      <div class="card">
+        <h3><span class="en">Change in share</span><span class="cs">Změna podílu</span></h3>
+        <p class="sub" id="shiftSub"></p>
+        <div class="shift" id="shift"></div>
+      </div>
+      <div class="card">
+        <h3><span class="en">How each map plays, last 180 days</span><span class="cs">Jak se mapy hrají, posledních 180 dní</span></h3>
+        <p class="sub"><span class="en">Close means won by 3 rounds or fewer. The last column compares how often the Elo favourite won with what Elo expected, with a 95% interval.</span><span class="cs">Těsná znamená výhru o 3 a méně kol. Poslední sloupec porovnává, jak často vyhrál favorit podle Elo proti tomu, co Elo čekalo, s 95% intervalem.</span></p>
+        <div class="scroll"><table id="chars"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="teams">
+    <h2><span class="en">Team trends</span><span class="cs">Vývoj týmů</span></h2>
+    <p class="finding" id="teamFinding"></p>
+    <div class="card">
+      <h3><span class="en">Top 30 active teams by model rating</span><span class="cs">30 nejlepších aktivních týmů podle ratingu modelu</span></h3>
+      <p class="sub"><span class="en">Team Elo per map with round margin. Active means at least 10 maps in 180 days and a match in the last 60. Select a team for its detail.</span><span class="cs">Týmové Elo po mapách s rozdílem kol. Aktivní znamená alespoň 10 map za 180 dní a zápas v posledních 60 dnech. Výběrem týmu otevřeš detail.</span></p>
+      <div class="scroll"><table id="rank"></table></div>
+    </div>
+    <div class="card" id="detail">
+      <div class="controls">
+        <label class="f"><span class="en">Team</span><span class="cs">Tým</span> <select id="teamSel"></select></label>
+        <label class="f"><span class="en">Compare with</span><span class="cs">Porovnat s</span> <select id="cmpSel"></select></label>
+      </div>
+      <div class="tiles" id="tiles"></div>
+      <h3><span class="en">Rating over the last 18 months</span><span class="cs">Rating za posledních 18 měsíců</span></h3>
+      <div class="legend" id="legend"></div>
+      <div class="chart" id="chart"></div>
+      <details><summary><span class="en">Rating as a table</span><span class="cs">Rating jako tabulka</span></summary><div class="scroll"><table id="chartTable"></table></div></details>
+      <div class="two" style="margin:18px 0 0">
+        <div><h3><span class="en">Map record</span><span class="cs">Bilance na mapách</span></h3><p class="sub"><span class="en">Last 180 days against the 180 days before. Under 5 maps is a small sample.</span><span class="cs">Posledních 180 dní proti předchozím 180. Méně než 5 map je malý vzorek.</span></p><div class="scroll"><table id="teamMaps"></table></div></div>
+        <div><h3><span class="en">Last known roster</span><span class="cs">Poslední známá soupiska</span></h3><p class="sub"><span class="en">Player rating and career maps in this data.</span><span class="cs">Rating hráče a odehrané mapy v těchto datech.</span></p><div class="scroll"><table id="teamRoster"></table></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="players">
+    <h2><span class="en">Player ratings</span><span class="cs">Ratingy hráčů</span></h2>
+    <p class="finding"><span class="en">The rating follows a player across teams, so a transfer carries it over. It comes from team results and event rosters, so it is not an individual performance statistic. Teammates on one strong roster rise together.</span><span class="cs">Rating se drží hráče i při přestupu do jiného týmu. Vzniká z týmových výsledků a soupisek na turnajích, takže to není individuální statistika výkonu. Spoluhráči ze silné soupisky rostou společně.</span></p>
+    <div class="card">
+      <div class="controls"><label class="f"><span class="en">Search</span><span class="cs">Hledat</span> <input type="search" id="pq" autocomplete="off"></label></div>
+      <div class="scroll"><table id="ptable"></table></div>
+    </div>
+  </section>
+
+  <section id="moves">
+    <h2><span class="en">Roster changes</span><span class="cs">Změny soupisek</span></h2>
+    <p class="finding" id="moveFinding"></p>
+    <div class="card">
+      <p class="sub"><span class="en">Top 30 teams, last 12 months. A one-event stand-in is left out. Rating after is taken 60 days later and needs at least 10 maps. This shows what followed, not what caused it: opponents and form differ.</span><span class="cs">30 nejlepších týmů, posledních 12 měsíců. Záskok na jeden turnaj je vynechaný. Rating po změně je o 60 dní později a vyžaduje alespoň 10 map. Ukazuje to, co následovalo, ne co to způsobilo: soupeři i forma se liší.</span></p>
+      <div class="scroll"><table id="mtable"></table></div>
+      <button class="more" id="moreMoves"></button>
+    </div>
+  </section>
+
+  <section id="method">
+    <details class="method"><summary><span class="en">Method, data and limits</span><span class="cs">Metoda, data a limity</span></summary>
+      <p class="en"><b>Data.</b> Map results and event rosters from Liquipedia, S, A and B-tier events since October 2023. Figures on this page are derived from that data and are shared under CC-BY-SA 3.0.</p>
+      <p class="cs"><b>Data.</b> Výsledky map a soupisky z Liquipedie, turnaje S, A a B-tier od října 2023. Čísla na této stránce jsou z těchto dat odvozená a sdílená pod licencí CC-BY-SA 3.0.</p>
+      <p class="en"><b>Ratings.</b> The same team and player ratings that feed the pre-match model in the project. Team Elo uses K=32 scaled by round margin. Player ratings use K=64 and the event roster.</p>
+      <p class="cs"><b>Ratingy.</b> Stejné týmové a hráčské ratingy, které vstupují do předzápasového modelu v projektu. Týmové Elo používá K=32 škálované rozdílem kol. Hráčské ratingy používají K=64 a soupisku na turnaji.</p>
+      <p class="en"><b>Prices.</b> A logistic model on team and player ratings, form, rest and experience, trained on Liquipedia results alone. Prices are fair odds unless a margin is selected.</p>
+      <p class="cs"><b>Ceny.</b> Logistický model s ratingy týmů a hráčů, formou, odpočinkem a zkušeností, trénovaný jen na výsledcích z Liquipedie. Ceny jsou férové kurzy, pokud nevybereš marži.</p>
+      <p class="en"><b>What is missing.</b> No rounds, kills, ADR, economy, utility or CT and T sides, because this data has only map scores and rosters. Those need premium match data. Lower-tier teams can hold inflated ratings when they rarely meet the top teams.</p>
+      <p class="cs"><b>Co chybí.</b> Žádná kola, killy, ADR, ekonomika, utility ani strany CT a T, protože tato data mají jen skóre map a soupisky. Na to jsou potřeba prémiová data ze zápasů. Týmy z nižších soutěží mohou mít nafouknutý rating, pokud se s nejlepšími potkávají málo.</p>
+      <p class="en"><b>Snapshot.</b> A static page generated from the project by <code>cs2_expert_data.py</code>. Research only, not betting advice.</p>
+      <p class="cs"><b>Snímek.</b> Statická stránka vygenerovaná z projektu skriptem <code>cs2_expert_data.py</code>. Jde o výzkum, ne o sázkové doporučení.</p>
+    </details>
+  </section>
+</main>
+<footer class="wrap">
+  <p><span class="en">Data: <a href="https://liquipedia.net/counterstrike/" rel="noopener">Liquipedia</a>, licensed under <a href="https://creativecommons.org/licenses/by-sa/3.0/" rel="noopener">CC-BY-SA 3.0</a>. Code: <a href="https://github.com/ZdenekBudicek/cs2-prematch-model" rel="noopener">cs2-prematch-model</a>.</span><span class="cs">Data: <a href="https://liquipedia.net/counterstrike/" rel="noopener">Liquipedia</a>, licence <a href="https://creativecommons.org/licenses/by-sa/3.0/" rel="noopener">CC-BY-SA 3.0</a>. Kód: <a href="https://github.com/ZdenekBudicek/cs2-prematch-model" rel="noopener">cs2-prematch-model</a>.</span></p>
+</footer>
+<div id="tip" role="status"></div>
+<script src="expert_data.js"></script>
+<script src="expert_prices.js"></script>
+<script>
+(() => {
+const D = window.CS2_EXPERT, $ = (id) => document.getElementById(id);
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+const qs = new URLSearchParams(location.search);
+const S = { lang: qs.get('lang') === 'cs' ? 'cs' : qs.get('lang') === 'en' ? 'en' : (store.get('cs2-lang') === 'cs' ? 'cs' : 'en'), tier: 'all', team: D.teams[0].name, cmp: D.teams[1].name, q: '', allMoves: false };
+const t = (en, cs) => (S.lang === 'cs' ? cs : en);
+const loc = () => (S.lang === 'cs' ? 'cs-CZ' : 'en-GB');
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = (v, d = 0) => v.toLocaleString(loc(), { minimumFractionDigits: d, maximumFractionDigits: d });
+const signed = (v, d = 0) => { if (v == null) return '–'; const r = Number(v.toFixed(d)); return r === 0 ? num(0, d) : (r > 0 ? '+' : '−') + num(Math.abs(r), d); };
+const pct = (v, d = 0) => num(v * 100, d) + (S.lang === 'cs' ? ' %' : '%');
+const day = (iso) => new Date(iso + 'T00:00:00Z').toLocaleDateString(loc(), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const mon = (ym) => new Date(ym + '-01T00:00:00Z').toLocaleDateString(loc(), { month: 'short', year: '2-digit', timeZone: 'UTC' });
+const team = (n) => D.teams.find((x) => x.name === n);
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+const tip = $('tip');
+const showTip = (html, x, y) => { tip.innerHTML = html; tip.style.display = 'block'; const r = tip.getBoundingClientRect(); tip.style.left = Math.max(8, Math.min(x + 14, innerWidth - r.width - 8)) + 'px'; tip.style.top = Math.max(8, Math.min(y + 14, innerHeight - r.height - 8)) + 'px'; };
+const hideTip = () => { tip.style.display = 'none'; };
+document.addEventListener('pointermove', (e) => { const el = e.target.closest && e.target.closest('[data-tip]'); if (el) showTip(el.dataset.tip, e.clientX, e.clientY); else if (!e.target.closest || !e.target.closest('.chart')) hideTip(); });
+
+const spark = (vals, w = 90, h = 24) => {
+  if (!vals || vals.length < 2) return '';
+  const lo = Math.min(...vals), hi = Math.max(...vals), span = hi - lo || 1;
+  const pts = vals.map((v, i) => [2 + i * (w - 6) / (vals.length - 1), h - 3 - (v - lo) / span * (h - 6)]);
+  const end = pts[pts.length - 1];
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline fill="none" stroke="var(--text-3)" stroke-width="1.5" stroke-linejoin="round" points="${pts.map((p) => p.map((x) => x.toFixed(1)).join(',')).join(' ')}"/><circle cx="${end[0].toFixed(1)}" cy="${end[1].toFixed(1)}" r="2.5" fill="var(--text-2)"/></svg>`;
+};
+
+function renderPool() {
+  const M = D.meta[S.tier];
+  document.querySelectorAll('#tierSeg button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.tier === S.tier));
+  const shares = M.maps.map((m) => M.cells[m].map((c, i) => (M.totals[i] ? c / M.totals[i] : 0)));
+  const max = Math.max(...shares.flat().filter((v, i) => M.totals[i % D.months.length] >= 30));
+  const short = (m) => (S.lang === 'cs' ? `${Number(m.slice(5))}/${m.slice(2, 4)}` : mon(m));
+  const head = D.months.map((m) => `<th>${esc(short(m))}${m === D.partial_month ? '*' : ''}</th>`).join('');
+  const body = M.maps.map((m, r) => `<tr><th class="l" scope="row">${esc(m)}</th>${D.months.map((mo, i) => {
+    const low = M.totals[i] < 30, v = shares[r][i];
+    const bg = low ? 'var(--surface-2)' : `color-mix(in oklab,var(--s1) ${Math.round(Math.min(v / max, 1) * 72)}%,var(--surface-2))`;
+    return `<td class="${low ? 'low' : ''}" style="background:${bg}" data-tip="<b>${esc(m)}</b>, ${esc(mon(mo))}<br>${pct(v, 1)} · ${M.cells[m][i]} / ${M.totals[i]} ${t('maps', 'map')}">${M.totals[i] ? num(v * 100) : ''}</td>`;
+  }).join('')}</tr>`).join('');
+  $('heat').innerHTML = `<thead><tr><th></th>${head}</tr></thead><tbody>${body}</tbody><tfoot><tr><th class="l">${t('Maps', 'Map')}</th>${M.totals.map((n) => `<th>${n}</th>`).join('')}</tr></tfoot>`;
+  $('heatMax').textContent = pct(max);
+
+  const rows = M.shift.filter((s) => s.recent || s.prev).map((s) => ({ ...s, d: (s.recent - s.prev) * 100 }));
+  const big = Math.max(...rows.map((s) => Math.abs(s.d)), 1);
+  $('shift').innerHTML = rows.map((s) => `<div>${esc(s.map)}</div><div class="track" data-tip="<b>${esc(s.map)}</b><br>${pct(s.prev, 1)} → ${pct(s.recent, 1)}<br>${s.n_prev} → ${s.n_recent} ${t('maps', 'map')}"><div class="b ${s.d >= 0 ? 'up' : 'down'}" style="width:calc(${(Math.abs(s.d) / big * 50).toFixed(1)}% - 1px)"></div></div><div class="v">${signed(s.d, 1)}</div>`).join('');
+  const span = (a) => `${mon(a[0])} – ${mon(a[a.length - 1])}`;
+  $('shiftSub').textContent = t(`Percentage points, ${span(M.recent_months)} against ${span(M.prev_months)}. Blue means more played, orange less.`, `Procentní body, ${span(M.recent_months)} proti ${span(M.prev_months)}. Modrá znamená častěji hranou, oranžová méně.`);
+  const up = rows[0], down = rows[rows.length - 1];
+  $('poolFinding').textContent = t(`${up.map} gained the most share, ${signed(up.d, 1)} points to ${pct(up.recent, 1)}. ${down.map} lost the most, ${signed(down.d, 1)} points to ${pct(down.recent, 1)}.`, `Nejvíc získala mapa ${up.map}, ${signed(up.d, 1)} bodu na ${pct(up.recent, 1)}. Nejvíc ztratila mapa ${down.map}, ${signed(down.d, 1)} bodu na ${pct(down.recent, 1)}.`);
+
+  const line = (c, name, cls = '') => `<tr class="${cls}"><td class="l">${esc(name)}</td><td>${num(c.n)}</td><td>${pct(c.close)}</td><td>${num(c.margin, 1)}</td><td>${pct(c.fav)} <span class="mut">/ ${pct(c.expected)}</span></td><td data-tip="${t('Won minus expected, 95% interval', 'Výhry minus očekávání, 95% interval')}: ± ${num(c.ci * 100, 1)}">${signed((c.fav - c.expected) * 100, 1)} <span class="mut">± ${num(c.ci * 100, 1)}</span></td></tr>`;
+  $('chars').innerHTML = `<thead><tr><th class="l">${t('Map', 'Mapa')}</th><th>${t('Maps', 'Map')}</th><th>${t('Close', 'Těsné')}</th><th>${t('Avg margin', 'Prům. rozdíl')}</th><th>${t('Fav. won / exp.', 'Favorit / oček.')}</th><th>${t('Diff, pts', 'Rozdíl, b.')}</th></tr></thead><tbody>${M.character.map((c) => line(c, c.map)).join('')}${line(M.overall, t('All maps', 'Všechny mapy'), 'total')}</tbody>`;
+}
+
+function renderRank() {
+  const movers = D.teams.filter((x) => x.d90 != null).sort((a, b) => b.d90 - a.d90);
+  const up = movers[0], down = movers[movers.length - 1];
+  $('teamFinding').textContent = t(`${D.teams[0].name} leads at ${num(D.teams[0].elo)}. Over 90 days ${up.name} rose the most (${signed(up.d90)}) and ${down.name} fell the most (${signed(down.d90)}).`, `Vede ${D.teams[0].name} s ratingem ${num(D.teams[0].elo)}. Za 90 dní nejvíc vyrostl tým ${up.name} (${signed(up.d90)}) a nejvíc klesl ${down.name} (${signed(down.d90)}).`);
+  $('rank').innerHTML = `<thead><tr><th>#</th><th class="l">${t('Team', 'Tým')}</th><th>Elo</th><th>30 ${t('d', 'd')}</th><th>90 ${t('d', 'd')}</th><th>${t('Last 10 maps', 'Posl. 10 map')}</th><th class="l">${t('Trend', 'Trend')}</th><th>${t('Last played', 'Naposledy')}</th></tr></thead><tbody>${D.teams.map((x) => `<tr class="${x.name === S.team ? 'sel' : ''}"><td class="mut">${x.rank}</td><td class="l"><button class="link" data-team="${esc(x.name)}">${esc(x.name)}</button></td><td>${num(x.elo)}</td><td>${signed(x.d30)}</td><td>${signed(x.d90)}</td><td>${x.form[0]}–${x.form[1] - x.form[0]}</td><td class="l">${spark(x.hist.slice(-26).map((h) => h[1]))}</td><td class="mut">${esc(day(x.last))}</td></tr>`).join('')}</tbody>`;
+}
+
+function lineChart(el, series, marks) {
+  el.innerHTML = '';
+  const W = Math.max(el.clientWidth, 300), H = W < 520 ? 260 : 320, m = { l: 46, r: W < 620 ? 12 : 104, t: 14, b: 26 };
+  const ms = (d) => Date.parse(d + 'T00:00:00Z');
+  const all = series.flatMap((s) => s.pts), xs = all.map((p) => ms(p[0])), ys = all.map((p) => p[1]);
+  const t0 = Math.min(...xs), t1 = Math.max(...xs), yl = Math.min(...ys), yh = Math.max(...ys);
+  const step = [20, 25, 50, 100, 200, 250].find((s) => (yh - yl) / s <= 5) || 500;
+  const y0 = Math.floor(yl / step) * step, y1 = Math.ceil(yh / step) * step;
+  const X = (v) => m.l + (v - t0) / (t1 - t0 || 1) * (W - m.l - m.r), Y = (v) => H - m.b - (v - y0) / (y1 - y0 || 1) * (H - m.t - m.b);
+  let g = '';
+  for (let v = y0; v <= y1 + 1e-6; v += step) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="12" fill="var(--text-3)">${num(v)}</text>`;
+  const d0 = new Date(t0); let tick = Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth() + 1, 1);
+  const gap = W < 520 ? 6 : 3; let c = 0;
+  for (; tick <= t1; tick = Date.UTC(new Date(tick).getUTCFullYear(), new Date(tick).getUTCMonth() + 1, 1), c++) {
+    if (c % gap) continue;
+    g += `<text x="${X(tick)}" y="${H - 7}" text-anchor="middle" font-size="12" fill="var(--text-3)">${esc(new Date(tick).toLocaleDateString(loc(), { month: 'short', year: '2-digit', timeZone: 'UTC' }))}</text>`;
+  }
+  const paths = series.map((s) => `<polyline fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${s.pts.map((p) => X(ms(p[0])).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' ')}"/>`).join('');
+  const ends = series.map((s) => { const p = s.pts[s.pts.length - 1]; return { s, x: X(ms(p[0])), y: Y(p[1]) }; }).sort((a, b) => a.y - b.y);
+  if (ends.length === 2 && ends[1].y - ends[0].y < 16) { const mid = (ends[0].y + ends[1].y) / 2; ends[0].ty = mid - 8; ends[1].ty = mid + 8; }
+  const dots = ends.map((e) => `<circle cx="${e.x}" cy="${e.y}" r="4" fill="${e.s.color}" stroke="var(--surface)" stroke-width="2"/>` + (W >= 620 ? `<text x="${e.x + 9}" y="${(e.ty || e.y) + 4}" font-size="12" fill="var(--text)">${esc(e.s.name.length > 13 ? e.s.name.slice(0, 12) + '…' : e.s.name)}</text>` : '')).join('');
+  const base = H - m.b - 7;
+  const mk = marks.filter((a) => ms(a.day) >= t0).map((a) => { const x = X(ms(a.day)); return `<path d="M${x - 4.5} ${base + 4} L${x + 4.5} ${base + 4} L${x} ${base - 4} Z" fill="var(--text-2)" stroke="var(--surface)" stroke-width="1"/>`; }).join('');
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="${esc(t('Team rating over time', 'Vývoj ratingu týmu'))}">${g}${paths}${mk}${dots}<line id="cx" y1="${m.t}" y2="${H - m.b}" stroke="var(--line-2)" visibility="hidden"/><g id="cd"></g><rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent"/></svg>`;
+  const svg = el.firstChild, line = svg.querySelector('#cx'), cd = svg.querySelector('#cd');
+  const move = (e) => {
+    const b = svg.getBoundingClientRect(), px = (e.clientX - b.left) * (W / b.width);
+    const when = t0 + (Math.max(m.l, Math.min(W - m.r, px)) - m.l) / (W - m.l - m.r) * (t1 - t0);
+    const rows = series.map((s) => { let best = null; for (const p of s.pts) if (ms(p[0]) <= when) best = p; return best && { s, p: best }; }).filter(Boolean);
+    line.setAttribute('x1', X(when)); line.setAttribute('x2', X(when)); line.setAttribute('visibility', 'visible');
+    cd.innerHTML = rows.map((r) => `<circle cx="${X(ms(r.p[0]))}" cy="${Y(r.p[1])}" r="4" fill="${r.s.color}" stroke="var(--surface)" stroke-width="2"/>`).join('');
+    const near = marks.filter((a) => Math.abs(ms(a.day) - when) < 6 * 864e5);
+    const label = new Date(when).toLocaleDateString(loc(), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+    showTip(`<b>${esc(label)}</b>` + rows.map((r) => `<br>${esc(r.s.name)}: ${num(r.p[1])}`).join('') + near.map((a) => `<br>${esc(moveText(a))}`).join(''), e.clientX, e.clientY);
+  };
+  svg.addEventListener('pointermove', move);
+  svg.addEventListener('pointerleave', () => { line.setAttribute('visibility', 'hidden'); cd.innerHTML = ''; hideTip(); });
+}
+const moveText = (a) => [a.joined.length ? t('In: ', 'Přišli: ') + a.joined.join(', ') : '', a.left.length ? t('Out: ', 'Odešli: ') + a.left.join(', ') : ''].filter(Boolean).join(' · ');
+
+function renderChart() {
+  const a = team(S.team), b = S.cmp && S.cmp !== S.team ? team(S.cmp) : null;
+  const series = [{ name: a.name, color: css('--s1'), pts: a.hist }];
+  if (b) series.push({ name: b.name, color: css('--s2'), pts: b.hist });
+  $('legend').innerHTML = series.map((s) => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('') + (a.moves.length ? `<span><svg width="10" height="9" aria-hidden="true"><path d="M0 9 L10 9 L5 0 Z" fill="var(--text-2)"/></svg>${esc(t(a.name + ' roster change', 'změna soupisky ' + a.name))}</span>` : '');
+  lineChart($('chart'), series, a.moves);
+  const lastByMonth = (x) => { const o = {}; x.hist.forEach((h) => { o[h[0].slice(0, 7)] = h[1]; }); return o; };
+  const ma = lastByMonth(a), mb = b ? lastByMonth(b) : {}, keys = [...new Set([...Object.keys(ma), ...Object.keys(mb)])].sort();
+  $('chartTable').innerHTML = `<thead><tr><th class="l">${t('Month', 'Měsíc')}</th><th>${esc(a.name)}</th>${b ? `<th>${esc(b.name)}</th>` : ''}</tr></thead><tbody>${keys.map((k) => `<tr><td class="l">${esc(mon(k))}</td><td>${ma[k] != null ? num(ma[k]) : '–'}</td>${b ? `<td>${mb[k] != null ? num(mb[k]) : '–'}</td>` : ''}</tr>`).join('')}</tbody>`;
+}
+
+function renderTeam() {
+  const x = team(S.team);
+  const opt = (sel, none) => (none ? `<option value="">${t('Nobody', 'Nikdo')}</option>` : '') + D.teams.map((v) => `<option value="${esc(v.name)}"${v.name === sel ? ' selected' : ''}>${v.rank}. ${esc(v.name)}</option>`).join('');
+  $('teamSel').innerHTML = opt(S.team); $('cmpSel').innerHTML = opt(S.cmp, true);
+  const tiles = [[`#${x.rank}`, t('Rank', 'Pořadí')], [num(x.elo), 'Elo'], [signed(x.d30), t('Elo, 30 days', 'Elo, 30 dní')], [signed(x.d90), t('Elo, 90 days', 'Elo, 90 dní')], [`${x.form[0]}–${x.form[1] - x.form[0]}`, t('Last 10 maps', 'Posledních 10 map')]];
+  $('tiles').innerHTML = tiles.map((v) => `<div class="tile"><b>${esc(v[0])}</b><span>${esc(v[1])}</span></div>`).join('');
+  renderChart();
+  $('teamMaps').innerHTML = `<thead><tr><th class="l">${t('Map', 'Mapa')}</th><th>${t('W–L', 'V–P')}</th><th class="l">${t('Win rate', 'Úspěšnost')}</th><th>${t('Before', 'Předtím')}</th></tr></thead><tbody>${x.maps.map((r) => { const small = r.n < 5; return `<tr><td class="l">${esc(r.map)}${small ? `<span class="tag">${t('small', 'malý')}</span>` : ''}</td><td>${r.w}–${r.n - r.w}</td><td class="l"><span class="winbar"><i style="width:${(r.w / r.n * 100).toFixed(0)}%"></i></span>${pct(r.w / r.n)}</td><td class="mut">${r.old_n ? `${r.old_w}–${r.old_n - r.old_w}` : '–'}</td></tr>`; }).join('') || `<tr><td class="l mut" colspan="4">${t('No maps in this window', 'V tomto období žádné mapy')}</td></tr>`}</tbody>`;
+  $('teamRoster').innerHTML = `<thead><tr><th class="l">${t('Player', 'Hráč')}</th><th>${t('Rating', 'Rating')}</th><th>${t('Maps', 'Map')}</th></tr></thead><tbody>${x.roster.map((r) => `<tr><td class="l">${esc(r.p)}</td><td>${num(r.r)}</td><td class="mut">${num(r.maps)}</td></tr>`).join('') || `<tr><td class="l mut" colspan="3">${t('Roster not known', 'Soupiska není známá')}</td></tr>`}</tbody>`;
+}
+
+function renderPlayers() {
+  const q = S.q.trim().toLowerCase();
+  const rows = D.players.filter((p) => !q || p.p.toLowerCase().includes(q) || p.team.toLowerCase().includes(q));
+  $('ptable').innerHTML = `<thead><tr><th>#</th><th class="l">${t('Player', 'Hráč')}</th><th class="l">${t('Last team', 'Poslední tým')}</th><th>${t('Rating', 'Rating')}</th><th>90 ${t('d', 'd')}</th><th>${t('Maps', 'Map')}</th><th class="l">${t('12 months', '12 měsíců')}</th></tr></thead><tbody>${rows.map((p) => `<tr><td class="mut">${p.rank}</td><td class="l">${esc(p.p)}</td><td class="l">${team(p.team) ? `<button class="link" data-team="${esc(p.team)}">${esc(p.team)}</button>` : esc(p.team)}</td><td>${num(p.r)}</td><td>${signed(p.d90)}</td><td class="mut">${num(p.maps)}</td><td class="l">${spark(p.spark)}</td></tr>`).join('') || `<tr><td class="l mut" colspan="7">${t('No match', 'Nic nenalezeno')}</td></tr>`}</tbody>`;
+}
+
+function renderMoves() {
+  const done = D.moves.filter((m) => m.after != null && m.before != null), rose = done.filter((m) => m.after > m.before).length;
+  const avg = done.length ? done.reduce((a, m) => a + m.after - m.before, 0) / done.length : 0;
+  $('moveFinding').textContent = t(`${D.moves.length} changes in the last 12 months. ${done.length} have enough maps afterwards to compare: the rating was higher 60 days later in ${rose}, and moved by ${signed(avg)} on average. These are today's top 30 teams, so the figure leans upward: teams that fell after a change have often dropped out of the list.`, `Za posledních 12 měsíců ${D.moves.length} změn. U ${done.length} je potom dost map na srovnání: rating byl po 60 dnech vyšší u ${rose} a v průměru se změnil o ${signed(avg)}. Jde o dnešních 30 nejlepších týmů, takže číslo je nadhodnocené: týmy, které po změně klesly, v seznamu často už nejsou.`);
+  const rows = S.allMoves ? D.moves : D.moves.slice(0, 15);
+  $('mtable').innerHTML = `<thead><tr><th class="l">${t('First event', 'První turnaj')}</th><th class="l">${t('Team', 'Tým')}</th><th class="l">${t('In', 'Přišli')}</th><th class="l">${t('Out', 'Odešli')}</th><th>${t('Elo before', 'Elo před')}</th><th>${t('After 60 d', 'Po 60 d')}</th><th>${t('Change', 'Změna')}</th></tr></thead><tbody>${rows.map((m) => `<tr><td class="l mut">${esc(day(m.day))}${m.confirmed ? '' : `<span class="tag">${t('latest', 'poslední')}</span>`}</td><td class="l"><button class="link" data-team="${esc(m.team)}">${esc(m.team)}</button></td><td class="l wrapc">${esc(m.joined.join(', ') || '–')}</td><td class="l wrapc">${esc(m.left.join(', ') || '–')}</td><td>${m.before != null ? num(m.before) : '–'}</td><td>${m.after != null ? num(m.after) : `<span class="mut">${t('too early', 'zatím ne')}</span>`}</td><td>${m.after != null && m.before != null ? signed(m.after - m.before) : '–'}</td></tr>`).join('')}</tbody>`;
+  const b = $('moreMoves'); b.style.display = D.moves.length > 15 ? '' : 'none'; b.textContent = S.allMoves ? t('Show fewer', 'Zobrazit méně') : t(`Show all ${D.moves.length}`, `Zobrazit všech ${D.moves.length}`);
+}
+
+const P = window.CS2_PRICES;
+const LABEL = { elo: ['Team rating', 'Rating týmu'], form: ['Recent form', 'Forma'], pelo: ['Player ratings', 'Hráčské ratingy'], rest: ['Rest days', 'Dny odpočinku'], pexp: ['Player experience', 'Zkušenost hráčů'], pfast: ['Recent player trend', 'Trend hráčů'], prs: ['Round share by players', 'Podíl kol hráčů'] };
+if (P) { S.a = P.teams[0]; S.b = P.teams[1]; S.bo = 3; S.margin = 0; $('price').hidden = false; } else { $('priceNav').remove(); }
+function quoteFor(a, b, bo) {
+  const i = P.teams.indexOf(a), j = P.teams.indexOf(b), flip = i > j, r = P.pairs[flip ? `${j}-${i}` : `${i}-${j}`];
+  const raw = bo === 1 ? r[0] : r[2], parts = bo === 1 ? r[1] : r[3];
+  return { p: flip ? 1 - raw : raw, parts: P.keys.map((k, n) => ({ k, v: flip ? -parts[n] : parts[n] })) };
+}
+function renderPrice() {
+  if (!P) return;
+  const q = quoteFor(S.a, S.b, S.bo), odd = (x) => (x > 0 ? num(1 / (x * (1 + S.margin)), 2) : '–');
+  const options = (sel) => P.teams.map((n, i) => `<option value="${esc(n)}"${n === sel ? ' selected' : ''}>${i + 1}. ${esc(n)}</option>`).join('');
+  $('pa').innerHTML = options(S.a); $('pb').innerHTML = options(S.b); $('pm').value = String(S.margin);
+  document.querySelectorAll('[data-bo]').forEach((b) => b.setAttribute('aria-pressed', Number(b.dataset.bo) === S.bo));
+  const rosterOf = (n) => (team(n).roster.length ? team(n).roster.map((r) => r.p).join(', ') : t('roster not known', 'soupiska není známá'));
+  const shownFav = Math.round(Math.max(q.p, 1 - q.p) * 1000) / 1000, shownA = q.p >= 0.5 ? shownFav : 1 - shownFav;
+  const tile = (n, p, shown) => `<div class="odd"><h3>${esc(n)}</h3><b>${odd(p)}</b><span class="p">${pct(shown, 1)}</span><small>${esc(rosterOf(n))}</small></div>`;
+  $('odds').innerHTML = tile(S.a, q.p, shownA) + tile(S.b, 1 - q.p, 1 - shownA);
+  $('split').innerHTML = `<i style="flex:${q.p.toFixed(4)}"></i><i style="flex:${(1 - q.p).toFixed(4)}"></i>`;
+  const drivers = q.parts.filter((x) => Math.abs(x.v) >= 0.005).sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
+  const big = Math.max(...drivers.map((x) => Math.abs(x.v)), 0.01), name = (k) => (LABEL[k] ? LABEL[k][S.lang === 'cs' ? 1 : 0] : k);
+  $('drivers').innerHTML = drivers.map((x) => `<div style="white-space:nowrap;font-size:13px">${esc(name(x.k))}</div><div class="track" data-tip="<b>${esc(name(x.k))}</b><br>${esc(x.v > 0 ? S.a : S.b)}: ${signed(Math.abs(x.v), 2)}"><div class="b ${x.v >= 0 ? 'up' : 'down'}" style="width:calc(${(Math.abs(x.v) / big * 50).toFixed(1)}% - 1px)"></div></div><div class="v">${signed(x.v, 2)}</div>`).join('');
+  $('drivers').style.gridTemplateColumns = '150px 1fr 54px';
+  const top = drivers[0], fav = q.p >= 0.5 ? S.a : S.b, pf = Math.max(q.p, 1 - q.p);
+  $('priceFinding').textContent = t(`In a BO${S.bo} the model makes ${fav} a ${pct(pf, 1)} favourite${top ? `, and ${name(top.k).toLowerCase()} moves the price the most` : ''}. Model data through ${day(P.asof)}.`, `V BO${S.bo} dává model týmu ${fav} šanci ${pct(pf, 1)}${top ? `, cenou nejvíc hýbe ${name(top.k).toLowerCase()}` : ''}. Data modelu do ${day(P.asof)}.`);
+}
+if (P) {
+  $('pa').addEventListener('change', (e) => { if (e.target.value === S.b) S.b = S.a; S.a = e.target.value; renderPrice(); });
+  $('pb').addEventListener('change', (e) => { if (e.target.value === S.a) S.a = S.b; S.b = e.target.value; renderPrice(); });
+  $('pm').addEventListener('change', (e) => { S.margin = Number(e.target.value); renderPrice(); });
+  $('swap').addEventListener('click', () => { [S.a, S.b] = [S.b, S.a]; renderPrice(); });
+  $('boSeg').addEventListener('click', (e) => { const b = e.target.closest('[data-bo]'); if (b) { S.bo = Number(b.dataset.bo); renderPrice(); } });
+}
+
+function renderAll() {
+  document.documentElement.lang = S.lang; document.documentElement.classList.toggle('is-cs', S.lang === 'cs');
+  document.querySelectorAll('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === S.lang));
+  $('asof').textContent = t(`Data through ${day(D.asof)} · ${num(D.maps_total)} maps`, `Data do ${day(D.asof)} · ${num(D.maps_total)} map`);
+  renderPrice(); renderPool(); renderRank(); renderTeam(); renderPlayers(); renderMoves();
+}
+document.addEventListener('click', (e) => {
+  const lang = e.target.closest('[data-lang]'), tier = e.target.closest('[data-tier]'), tm = e.target.closest('[data-team]');
+  if (lang) { S.lang = lang.dataset.lang; store.set('cs2-lang', S.lang); renderAll(); }
+  if (tier) { S.tier = tier.dataset.tier; renderPool(); }
+  if (tm && team(tm.dataset.team)) { S.team = tm.dataset.team; if (S.cmp === S.team) S.cmp = ''; renderRank(); renderTeam(); $('detail').scrollIntoView({ block: 'start' }); }
+});
+$('teamSel').addEventListener('change', (e) => { S.team = e.target.value; if (S.cmp === S.team) S.cmp = ''; renderRank(); renderTeam(); });
+$('cmpSel').addEventListener('change', (e) => { S.cmp = e.target.value; renderChart(); });
+$('pq').addEventListener('input', (e) => { S.q = e.target.value; renderPlayers(); });
+$('moreMoves').addEventListener('click', () => { S.allMoves = !S.allMoves; renderMoves(); });
+let rt, lastW = 0; new ResizeObserver((en) => { const w = en[0].contentRect.width; if (Math.abs(w - lastW) < 2) return; lastW = w; clearTimeout(rt); rt = setTimeout(renderChart, 120); }).observe($('detail'));
+renderAll();
+})();
+</script>
+</body>
+</html>
