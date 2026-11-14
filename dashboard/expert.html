@@ -78,7 +78,7 @@ footer{padding:26px 0 44px;color:var(--text-3);font-size:13px}footer p{margin:0 
 <body>
 <header class="bar"><div class="wrap">
   <a class="back" href="../"><span class="en">← Portfolio</span><span class="cs">← Portfolio</span></a>
-  <nav><a href="#price" id="priceNav"><span class="en">Pricing</span><span class="cs">Ceny</span></a><a href="#pool"><span class="en">Map pool</span><span class="cs">Map pool</span></a><a href="#teams"><span class="en">Teams</span><span class="cs">Týmy</span></a><a href="#players"><span class="en">Players</span><span class="cs">Hráči</span></a><a href="#moves"><span class="en">Roster changes</span><span class="cs">Změny soupisek</span></a><a href="#method"><span class="en">Method</span><span class="cs">Metoda</span></a></nav>
+  <nav><a href="#price" id="priceNav"><span class="en">Pricing</span><span class="cs">Ceny</span></a><a href="#next" id="nextNav"><span class="en">Upcoming</span><span class="cs">Zápasy</span></a><a href="#pool"><span class="en">Map pool</span><span class="cs">Map pool</span></a><a href="#teams"><span class="en">Teams</span><span class="cs">Týmy</span></a><a href="#players"><span class="en">Players</span><span class="cs">Hráči</span></a><a href="#moves"><span class="en">Roster changes</span><span class="cs">Změny soupisek</span></a><a href="#method"><span class="en">Method</span><span class="cs">Metoda</span></a></nav>
   <div class="seg" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="cs">CZ</button></div>
 </div></header>
 <main class="wrap">
@@ -106,6 +106,18 @@ footer{padding:26px 0 44px;color:var(--text-3);font-size:13px}footer p{margin:0 
         <div style="grid-column:1/-1"><h3><span class="en">What moves the price</span><span class="cs">Co hýbe cenou</span></h3><p class="sub"><span class="en">Each input's contribution in log-odds. Blue pushes towards team A, orange towards team B. The inputs overlap and offset each other: form can push against a team on a winning run because the ratings have already counted those wins. Read the total, not one bar.</span><span class="cs">Příspěvek každého vstupu v log-odds. Modrá tlačí k týmu A, oranžová k týmu B. Vstupy se překrývají a vzájemně vyvažují: forma může tlačit proti týmu v sérii výher, protože ratingy už ty výhry započítaly. Čti celek, ne jeden sloupec.</span></p><div class="shift" id="drivers"></div></div>
       </div>
       <p class="sub" style="margin:16px 0 0"><span class="en">Series winner only. Research estimate, before the veto, with the last known rosters and data to the date above. It does not see stand-ins or map bans. Built from Liquipedia results only. Series format is inferred from the recorded maps, so total maps and handicap are not priced. In testing this model was less accurate than Pinnacle (log loss 0.610 against 0.580 on 770 series). Not betting advice.</span><span class="cs">Jen vítěz série. Výzkumný odhad před vetem, s posledními známými soupiskami a daty k výše uvedenému dni. Nevidí záskoky ani zákazy map. Vychází jen z výsledků na Liquipedii. Formát série se odvozuje ze zaznamenaných map, proto se neoceňuje počet map ani handicap. V testu byl tento model méně přesný než Pinnacle (log loss 0,610 proti 0,580 na 770 sériích). Nejde o sázkové doporučení.</span></p>
+    </div>
+  </section>
+
+  <section id="next" hidden>
+    <h2><span class="en">Upcoming matches</span><span class="cs">Nadcházející zápasy</span></h2>
+    <p class="finding" id="nextFinding"></p>
+    <div class="card">
+      <div class="scroll"><table id="nextTable"></table></div>
+      <p class="sub" style="margin:16px 0 0"><span class="en">Series winner before the veto, with the last known rosters. A BO5 is priced with the BO3 weights. Teams with fewer than five rated series are left out. The schedule comes from Liquipedia. Each price is saved to forward_log.csv in the repository before the match starts and is not changed afterwards. Not betting advice.</span><span class="cs">Vítěz série před vetem, s posledními známými soupiskami. BO5 se oceňuje vahami pro BO3. Týmy s méně než pěti hodnocenými sériemi se vynechávají. Program je z Liquipedie. Každá cena se před začátkem zápasu uloží do forward_log.csv v repozitáři a potom se už nemění. Nejde o sázkové doporučení.</span></p>
+      <h3 style="margin-top:22px"><span class="en">Record so far</span><span class="cs">Dosavadní bilance</span></h3>
+      <p class="sub" id="recordText"></p>
+      <div class="scroll"><table id="recordTable"></table></div>
     </div>
   </section>
 
@@ -198,6 +210,7 @@ footer{padding:26px 0 44px;color:var(--text-3);font-size:13px}footer p{margin:0 
 <div id="tip" role="status"></div>
 <script src="expert_data.js"></script>
 <script src="expert_prices.js"></script>
+<script src="expert_upcoming.js"></script>
 <script>
 (() => {
 const D = window.CS2_EXPERT, $ = (id) => document.getElementById(id);
@@ -373,11 +386,34 @@ if (P) {
   $('boSeg').addEventListener('click', (e) => { const b = e.target.closest('[data-bo]'); if (b) { S.bo = Number(b.dataset.bo); renderPrice(); } });
 }
 
+const U = window.CS2_UPCOMING;
+if (U) $('next').hidden = false; else $('nextNav').remove();
+function renderUpcoming() {
+  if (!U) return;
+  const at = (iso) => new Date(iso).toLocaleString(loc(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const odd = (x) => num(1 / x, 2), inTop = (n) => P && P.teams.includes(n);
+  const pair = (r) => { const names = `${esc(r[2])} – ${esc(r[3])}`; return inTop(r[2]) && inTop(r[3]) ? `<button class="link" data-a="${esc(r[2])}" data-b="${esc(r[3])}" data-bo="${r[4] === 1 ? 1 : 3}">${names}</button>` : names; };
+  const rows = U.matches.filter((r) => Date.parse(r[0]) > Date.now());
+  $('nextFinding').textContent = rows.length
+    ? t(`${rows.length} matches in the next seven days, priced from results through ${day(U.through)}. Times are in your time zone. A linked match opens in the pricing panel above.`, `Zápasů v příštích sedmi dnech: ${rows.length}. Ceny vycházejí z výsledků do ${day(U.through)}, časy jsou ve tvém časovém pásmu. Zápas s odkazem se otevře v panelu Ceny výše.`)
+    : t(`No match in the schedule starts after now. The schedule was last read on ${day(U.made.slice(0, 10))}.`, `V programu není žádný zápas, který teprve začne. Program byl naposledy načten ${day(U.made.slice(0, 10))}.`);
+  $('nextTable').innerHTML = rows.length ? `<thead><tr><th class="l">${t('Start', 'Začátek')}</th><th class="l">${t('Event', 'Turnaj')}</th><th class="l">${t('Match', 'Zápas')}</th><th>${t('Format', 'Formát')}</th><th>${t('First team wins', 'Vyhraje první tým')}</th><th>${t('Fair odds', 'Férové kurzy')}</th></tr></thead><tbody>${rows.map((r) => `<tr><td class="l mut">${esc(at(r[0]))}</td><td class="l wrapc">${esc(r[1])}</td><td class="l">${pair(r)}</td><td>BO${r[4]}</td><td>${pct(r[5], 1)}</td><td>${odd(r[5])} / ${odd(1 - r[5])}</td></tr>`).join('')}</tbody>` : '';
+  const R = U.record;
+  $('recordText').textContent = R
+    ? t(`${R.n} logged ${R.n === 1 ? 'match has' : 'matches have'} finished: log loss ${num(R.logloss, 3)}, and the model's favourite won ${pct(R.accuracy)}.${R.n < 200 ? ' This is still a small sample.' : ''}`, `Dohraných zápasů se záznamem: ${R.n}. Log loss ${num(R.logloss, 3)}, favorit modelu vyhrál v ${pct(R.accuracy)} případů.${R.n < 200 ? ' Je to zatím malý vzorek.' : ''}`)
+    : t('No logged match has finished yet.', 'Zatím se nedohrál žádný zápas se záznamem.');
+  $('recordTable').innerHTML = U.results.length ? `<thead><tr><th class="l">${t('Start', 'Začátek')}</th><th class="l">${t('Match', 'Zápas')}</th><th>${t('First team wins', 'Vyhraje první tým')}</th><th class="l">${t('Winner', 'Vítěz')}</th></tr></thead><tbody>${U.results.map((r) => `<tr><td class="l mut">${esc(at(r[0]))}</td><td class="l">${esc(r[2])} – ${esc(r[3])}</td><td>${pct(r[5], 1)}</td><td class="l">${esc(r[6] ? r[2] : r[3])}</td></tr>`).join('')}</tbody>` : '';
+}
+if (U) $('nextTable').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-a]');
+  if (b) { S.a = b.dataset.a; S.b = b.dataset.b; S.bo = Number(b.dataset.bo); renderPrice(); $('price').scrollIntoView({ behavior: 'smooth' }); }
+});
+
 function renderAll() {
   document.documentElement.lang = S.lang; document.documentElement.classList.toggle('is-cs', S.lang === 'cs');
   document.querySelectorAll('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === S.lang));
   $('asof').textContent = t(`Data through ${day(D.asof)} · ${num(D.maps_total)} maps`, `Data do ${day(D.asof)} · ${num(D.maps_total)} map`);
-  renderPrice(); renderPool(); renderRank(); renderTeam(); renderPlayers(); renderMoves();
+  renderPrice(); renderUpcoming(); renderPool(); renderRank(); renderTeam(); renderPlayers(); renderMoves();
 }
 document.addEventListener('click', (e) => {
   const lang = e.target.closest('[data-lang]'), tier = e.target.closest('[data-tier]'), tm = e.target.closest('[data-team]');

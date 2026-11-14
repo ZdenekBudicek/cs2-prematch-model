@@ -35,6 +35,7 @@ The [expert dashboard](https://zdenekbudicek.github.io/cs2/) shows team trends, 
 | `cs2_core.py` | Data loading, ratings, features, fitting, scoring |
 | `cs2_model.py` | Model training and evaluation, writes `results.json` |
 | `cs2_expert_data.py`, `cs2_expert_prices.py` | Aggregates and prices for the dashboard |
+| `cs2_upcoming.py` | Prices upcoming matches from the Liquipedia schedule and saves each price to `forward_log.csv` before the match starts |
 | `dashboard/` | The expert dashboard page and its aggregated data |
 | `cs2_liquipedia_maps.py`, `cs2_event_features.py`, `cs2_team_aliases.py` | Liquipedia collection and parsing |
 | `cs2_odds_download.py` | Downloads prices for the market comparison, private output |
@@ -52,6 +53,7 @@ The tests use synthetic data and need nothing else. The model needs data you col
 1. Put your contact address in `contact.txt`, which Liquipedia's API terms require in the User-Agent.
 2. Run `cs2_liquipedia_maps.py`, `cs2_team_aliases.py` and `cs2_event_features.py`. These are paced to Liquipedia's limits.
 3. Run `cs2_model.py`, then `cs2_expert_data.py` and `cs2_expert_prices.py`.
+4. Run `cs2_upcoming.py <cache.jsonl>` with the page cache from step 2 to price the matches of the next seven days.
 
 The market comparison also needs `ODDSPAPI_KEY` and `cs2_odds_download.py`. Without that file, `cs2_model.py` skips the comparison.
 

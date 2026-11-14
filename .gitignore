@@ -10,6 +10,8 @@
 !cs2_model.py
 !cs2_expert_data.py
 !cs2_expert_prices.py
+!cs2_upcoming.py
+!forward_log.csv
 !cs2_liquipedia_maps.py
 !cs2_event_features.py
 !cs2_team_aliases.py
@@ -20,6 +22,7 @@
 !dashboard/expert.html
 !dashboard/expert_data.js
 !dashboard/expert_prices.js
+!dashboard/expert_upcoming.js
 !.github/
 !.github/workflows/
 !.github/workflows/tests.yml
