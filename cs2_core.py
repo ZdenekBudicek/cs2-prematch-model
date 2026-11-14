@@ -80,7 +80,7 @@ def build(data, KP=64, lag=False, KM=1, KR=300, trace=None):
             pa = ra["players"] if ra else None
             pb = rb["players"] if rb else None
             tw = {3: 1.5, 2: 1.2}.get(tier, 1.0)
-            for m, s, rd in res:
+            for m, s, rd, share in res:
                 e = e0 = expected(elo[a] - elo[b])
                 dw = (elo[a] - elo[b]) * (1 if s else -1)
                 w = K * math.log(rd + 1) / math.log(7) * 2.2 / (2.2 + max(dw, -400) * .001)
@@ -97,7 +97,6 @@ def build(data, KP=64, lag=False, KM=1, KR=300, trace=None):
                             tab[p] += k * (s - e)
                         for p in pb:
                             tab[p] -= k * (s - e)
-                share = 13 / (26 - min(rd, 13)) if s else 1 - 13 / (26 - min(rd, 13))
                 e = .5 + max(-.4, min(.4, (rr[a] - rr[b]) / 1000))
                 rr[a] += KR * (share - e); rr[b] -= KR * (share - e)
                 if pa and pb:
@@ -206,10 +205,10 @@ def build(data, KP=64, lag=False, KM=1, KR=300, trace=None):
             s1, s2 = int(r["score1"]), int(r["score2"])
             ours, theirs = (s1, s2) if r["team1"] == a else (s2, s1)
             s, m = int(ours > theirs), r["map"]
-            res.append((m, s, abs(ours - theirs)))
+            res.append((m, s, abs(ours - theirs), ours / (ours + theirs)))   # real round share, also in overtime
             M.append(dict(month=key[0][:7], g=gi, y=s, elo=d, form=f["form"], fast=fast[a] - fast[b] - d, unc=f["unc"],
                           map_off=off[(a, m)] - off[(b, m)], pelo=pd, rest=f["rest"], pfast=f["pfast"]))
-        wa = sum(s for _, s, _ in res); wb = len(res) - wa
+        wa = sum(r[1] for r in res); wb = len(res) - wa
         y1 = res[0][1]
         need = max(wa, wb)
         if wa == wb or need > 3 or wa + wb > 2 * need - 1:

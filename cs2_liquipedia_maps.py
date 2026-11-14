@@ -112,8 +112,9 @@ with open(out_path, "w", newline="", encoding="utf8") as f:
             for mp in re.finditer(r"\|\s*map(\d)\s*=\s*\{\{Map\s*\|(.*?)\}\}", b, re.S):
                 body = mp.group(2)
                 name = re.search(r"map\s*=\s*([^|\n}]+)", body)
-                s1 = num(body, "t1t") + num(body, "t1ct") + num(body, "o1t") + num(body, "o1ct") + num(body, "t1ot")
-                s2 = num(body, "t2t") + num(body, "t2ct") + num(body, "o2t") + num(body, "o2ct") + num(body, "t2ot")
+                # Overtime rounds are o<period>t<team>t / o<period>t<team>ct on Liquipedia (o1t1t, o2t2ct ...).
+                s1 = num(body, "t1t") + num(body, "t1ct") + num(body, r"o\d+t1(?:t|ct)")
+                s2 = num(body, "t2t") + num(body, "t2ct") + num(body, r"o\d+t2(?:t|ct)")
                 key = (day, t[0], t[1], mp.group(1))
                 if name and name.group(1).strip() and s1 != s2 and s1 + s2 >= 13 and key not in seen and day >= "2023-10-01":
                     seen.add(key)
