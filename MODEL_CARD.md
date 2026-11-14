@@ -54,7 +54,7 @@ Series from May 2026 where a team changed players (stability under 0.8, 458 seri
 - The input list was chosen on the uncorrected data and was not selected again.
 - Ratings come from results and rosters. There are no rounds, kills, ADR, economy, utility or CT and T sides.
 - About six months of prices from one bookmaker, on the series that could be matched.
-- Event rosters are known only after they are announced. No live forward test has been run on this version.
+- Event rosters are known only after they are announced. A forward record started on 14 November 2026: prices for upcoming matches are saved to `forward_log.csv` before each match. It is too short to report.
 - Lower-tier teams can hold inflated ratings when they rarely meet the top teams.
 
 This is research, not a production price and not betting advice.
