@@ -119,7 +119,7 @@ def build(data, KP=64, lag=False, KM=1, KR=300, trace=None):
                 n[a] += 1; n[b] += 1
                 if trace:
                     trace(dict(day=today, page=page, tier=tier, a=a, b=b, map=m, won=s, diff=rd, exp=e0,
-                               elo_a=elo[a], elo_b=elo[b], pa=pa, pb=pb, pl=pl))
+                               elo_a=elo[a], elo_b=elo[b], pa=pa, pb=pb, pl=pl, share=share))
             if bo3_maps:
                 dec[a].append(bo3_maps == 3); dec[b].append(bo3_maps == 3)
             for x, r in ((a, ra), (b, rb)):

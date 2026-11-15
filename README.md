@@ -34,6 +34,7 @@ The [expert dashboard](https://zdenekbudicek.github.io/cs2/) shows team trends, 
 |---|---|
 | `cs2_core.py` | Data loading, ratings, features, fitting, scoring |
 | `cs2_model.py` | Model training and evaluation, writes `results.json` |
+| `cs2_glicko.py` | Glicko-2 against Elo, tested and rejected, writes `cs2_glicko_results.json` |
 | `cs2_expert_data.py`, `cs2_expert_prices.py` | Aggregates and prices for the dashboard |
 | `cs2_upcoming.py` | Prices upcoming matches from the Liquipedia schedule and saves each price to `forward_log.csv` before the match starts |
 | `dashboard/` | The expert dashboard page and its aggregated data |

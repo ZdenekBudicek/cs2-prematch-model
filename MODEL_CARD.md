@@ -47,6 +47,21 @@ All 3,491 series from May 2026: log loss 0.5933, accuracy 67.9%, against Elo onl
 
 Series from May 2026 where a team changed players (stability under 0.8, 458 series): 0.6202 for a team-only model, 0.5338 with player data, gain 0.0863, interval 0.0549 to 0.1168. Stable rosters (2,917 series): gain 0.0381, interval 0.0289 to 0.0473. These use event rosters, so they carry some hindsight about who played.
 
+## Glicko-2: tested and rejected
+
+Script: `cs2_glicko.py`, results in `cs2_glicko_results.json`, measured 15 Nov 2026. Glicko-2 gives each team a rating deviation that grows while it is inactive and shrinks as it plays, so it should help most for teams with little data.
+
+Rules fixed before results were seen: each day is one rating period, so ratings stay frozen within a day. Settings were chosen on map log loss of Apr to Dec 2024, with the grid widened once because the first choice sat on its edge; the second choice (round-share scores, initial deviation 700, a quarter day per period) is also on its edge and was kept, as fixed. A Glicko input would join the model only with a gain of at least 0.0005 on May 2025 to Apr 2026. Later series and prices were read afterwards.
+
+| | May 2025 to Apr 2026 | May 2026 onward |
+|---|---|---|
+| Model + Glicko rating and deviation term, gain | 0.0027 (0.0002 to 0.0052), passes the rule | -0.0007 (-0.0031 to 0.0016) |
+| Glicko alone against Elo alone | -0.0016 (-0.0106 to 0.0075) | 0.6440 against 0.6428 |
+| Teams with fewer than 30 earlier maps, model + Glicko | | -0.0026 (-0.0063 to 0.0010), 1,818 series |
+| 770 priced series: model, with Glicko, Pinnacle | | 0.6105, 0.6069, 0.5805; gain 0.0035 (-0.0012 to 0.0080) |
+
+It passed selection and did not hold up on later series, including the teams with little data, so it is not used. The player rating already carries much of what a deviation would add: a new team made of known players is not unknown. Map log loss pushed the deviation to its largest values and is a weak target for series inputs, but a different target was not tried, because it would be chosen after seeing these results.
+
 ## Limits
 
 - Series format and score are still inferred from the maps held, not read from a schedule. In a check against complete series results from a second source, 0.7% of 9,166 series had the wrong format and 1.3% the wrong score. Before the overtime correction the same check gave 12.2% and 16.4%, and a third map looked rarer than it is (35.1% of BO3 series from May 2026, now 40.7%).

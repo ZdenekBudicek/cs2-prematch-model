@@ -6,6 +6,8 @@
 !MODEL_CARD.md
 !requirements.txt
 !results.json
+!cs2_glicko.py
+!cs2_glicko_results.json
 !cs2_core.py
 !cs2_model.py
 !cs2_expert_data.py
